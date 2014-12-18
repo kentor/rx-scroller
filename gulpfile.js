@@ -21,7 +21,7 @@ gulp.task('css', function() {
     .pipe(stylus({
       'include css': true,
     }))
-    .pipe(minifyCSS())
+    // .pipe(minifyCSS())
     .pipe(gulp.dest('public/'));
 });
 
