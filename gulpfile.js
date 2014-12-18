@@ -21,7 +21,7 @@ gulp.task('css', function() {
     .pipe(stylus({
       'include css': true,
     }))
-    .pipe(minifyCSS())
+    // .pipe(minifyCSS())
     .pipe(gulp.dest('public/'));
 });
 
@@ -77,4 +77,5 @@ gulp.task('livereload', function() {
   });
 });
 
-gulp.task('default', ['watch-css', 'watch-js', 'livereload', 'web-server']);
+gulp.task('default', ['watch-css', 'watch-lint', 'watch-js', 'livereload',
+                      'web-server']);
