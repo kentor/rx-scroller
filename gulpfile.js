@@ -77,4 +77,5 @@ gulp.task('livereload', function() {
   });
 });
 
-gulp.task('default', ['watch-css', 'watch-js', 'livereload', 'web-server']);
+gulp.task('default', ['watch-css', 'watch-lint', 'watch-js', 'livereload',
+                      'web-server']);

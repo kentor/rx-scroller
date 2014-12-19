@@ -14,18 +14,44 @@ var Index = React.createClass({
     var node = this.getDOMNode();
     var s = node.querySelector('.scroll-content-container');
     var scrollbar = node.querySelector('.scrollbar');
-
-    var magicRatio = scrollbar.scrollHeight / s.scrollHeight;
-
-    var scrollTrackHeight = scrollbar.scrollHeight * magicRatio
     var scrollbarTrack = node.querySelector('.scrollbar-track');
-    scrollbarTrack.style.height = scrollTrackHeight + "px";
 
     var scroll = Rx.Observable.fromEvent(s, 'scroll');
 
+    // scrolling
     var subscription = scroll.subscribe(function(e) {
+      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
       var scrollTop = e.target.scrollTop;
+      var scrollTrackHeight = scrollbar.clientHeight * magicRatio;
+
       scrollbarTrack.style.top = (scrollTop * magicRatio) + "px";
+      scrollbarTrack.style.height = scrollTrackHeight + "px";
+    });
+
+    // drag scrolling
+    var mouseup = Rx.Observable.fromEvent(document, 'mouseup');
+    var mousemove = Rx.Observable.fromEvent(document, 'mousemove');
+    var mousedown = Rx.Observable.fromEvent(scrollbarTrack, 'mousedown');
+    var mousedrag = mousedown.flatMap(function(md) {
+      // calculate offsets with mouse down
+      var startY = md.offsetY;
+
+      // calculate delta with mousemove until mouseup
+      return mousemove.map(function(mm) {
+        if (mm.preventDefault) {
+          mm.preventDefault();
+        } else {
+          event.returnValue = false;
+        }
+
+        return {
+          top: mm.clientY - startY,
+        };
+      }).takeUntil(mouseup);
+    });
+    mousedrag.subscribe(function(pos) {
+      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
+      s.scrollTop = pos.top / magicRatio;
     });
   },
 
