@@ -1,6 +1,6 @@
 var React = require('react');
-var Rx = require('rx');
 var Bacon = require('baconjs');
+var ClassList = require('class-list');
 
 var Index = React.createClass({
   getInitialState: function() {
@@ -13,90 +13,75 @@ var Index = React.createClass({
 
   componentDidMount: function() {
     var node = this.getDOMNode();
-    var s = node.querySelector('.scroll-content-container');
-    var scrollbar = node.querySelector('.scrollbar');
-    var scrollbarTrack = node.querySelector('.scrollbar-track');
+    var viewport = node.querySelector('.scroll-viewport');
+    var track = node.querySelector('.scrollbar-track');
+    var thumb = node.querySelector('.scrollbar-thumb');
 
-    var scroll = Rx.Observable.fromEvent(s, 'scroll');
-
-    function redrawSrollbarTrack() {
-      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
-      var scrollTop = s.scrollTop;
-      var scrollTrackHeight = scrollbar.clientHeight * magicRatio;
-
-      scrollbarTrack.style.top = (scrollTop * magicRatio) + "px";
-      scrollbarTrack.style.height = scrollTrackHeight + "px";
+    function resizeAndRepositionThumb() {
+      var magicRatio = track.clientHeight / viewport.scrollHeight;
+      thumb.style.top = (viewport.scrollTop * magicRatio) + "px";
+      thumb.style.height = (track.clientHeight * magicRatio) + "px";
     }
 
-    // scrolling
-    var subscription = scroll.subscribe(function(e) {
-      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
-      var scrollTop = e.target.scrollTop;
-      var scrollTrackHeight = scrollbar.clientHeight * magicRatio;
+    var scroll = Bacon.fromEventTarget(viewport, 'scroll');
+    var meViewport = Bacon.fromEventTarget(viewport, 'mouseenter');
+    var meTrack = Bacon.fromEventTarget(track, 'mouseenter');
+    var mlTrack = Bacon.fromEventTarget(track, 'mouseleave');
 
-      scrollbarTrack.style.top = (scrollTop * magicRatio) + "px";
-      scrollbarTrack.style.height = scrollTrackHeight + "px";
-    });
-
-    // drag scrolling
-    var mouseup = Rx.Observable.fromEvent(document, 'mouseup');
-    var mousemove = Rx.Observable.fromEvent(document, 'mousemove');
-    var mousedown = Rx.Observable.fromEvent(scrollbarTrack, 'mousedown');
-    var mousedrag = mousedown.flatMap(function(md) {
-      // calculate offsets with mouse down
-      var startY = md.offsetY;
-
-      // calculate delta with mousemove until mouseup
-      return mousemove.map(function(mm) {
-        if (mm.preventDefault) {
-          mm.preventDefault();
-        } else {
-          event.returnValue = false;
+    // show
+    var show = Bacon.once('start')
+      .merge(scroll)
+      .merge(meViewport)
+      .merge(meTrack.map(true))
+      .merge(mlTrack)
+      .flatMapLatest(function(e) {
+        if (e.target === track && e.type === 'mouseleave') {
+          return Bacon.later(1000, false);
         }
+        if ((e.target === viewport && e.type === 'mouseenter') ||
+            e.type === 'scroll') {
+          return Bacon.later(1000, false).startWith(true);
+        }
+        if (e === 'start') {
+          return Bacon.later(2000, false).startWith(true);
+        }
+        return e;
+      })
+      .skipDuplicates();
 
-        return {
-          top: mm.clientY - startY,
-        };
+    var cl = ClassList(thumb);
+    show.onValue(function(bool) {
+      if (bool) resizeAndRepositionThumb();
+      cl[bool ? 'add' : 'remove']('visible');
+    });
+
+    // scrolling
+    scroll.onValue(resizeAndRepositionThumb);
+
+    // dragging
+    var mouseup = Bacon.fromEventTarget(document, 'mouseup');
+    var mousemove = Bacon.fromEventTarget(document, 'mousemove');
+    var mousedown = Bacon.fromEventTarget(thumb, 'mousedown');
+    mousedown.flatMap(function(md) {
+      var startY = md.offsetY || md.layerY || 0;
+      console.log('md.offsetY', startY);
+      return mousemove.map(function(mm) {
+        mm.preventDefault();
+        console.log('mm.clientY', mm.clientY);
+        return mm.clientY - startY;
       }).takeUntil(mouseup);
-    });
-    mousedrag.subscribe(function(pos) {
-      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
-      s.scrollTop = pos.top / magicRatio;
-    });
-
-    // mouse enter show for 2 seconds
-    var mouseenterElement = Bacon.fromEventTarget(node, 'mouseenter');
-    mouseenterElement.flatMapLatest(function(me) {
-      return Bacon.later(1000, false).startWith(true);
-    }).onValue(function(bool) {
-      if (bool) {
-        redrawSrollbarTrack();
-        scrollbarTrack.style.opacity = 1;
-      } else {
-        scrollbarTrack.style.opacity = 0;
-      }
-    });
-
-    var meScrollTrack = Bacon.fromEventTarget(scrollbarTrack, 'mouseenter');
-    var mlScrollTrack = Bacon.fromEventTarget(scrollbarTrack, 'mouseleave');
-    meScrollTrack.map(true)
-    .merge(mlScrollTrack.map(false)).onValue(function(bool) {
-      if (bool) {
-        redrawSrollbarTrack();
-        scrollbarTrack.style.opacity = 1;
-      } else {
-        scrollbarTrack.style.opacity = 0;
-      }
+    }).onValue(function(top) {
+      viewport.scrollTop = top * viewport.scrollHeight / track.clientHeight;
     });
   },
 
   render: function() {
     return (
       <div className="scroller">
-        <div className="scrollbar">
-          <div className="scrollbar-track"></div>
+        <div className="scrollbar-track">
+          <div className="scrollbar-thumb"></div>
         </div>
-        <div className="scroll-content-container">
+        <div className="scroll-viewport">
           <div className="scroll-content">
             {this.state.shit.map(function(shit, i) {
               return <div key={i}>{shit}</div>;

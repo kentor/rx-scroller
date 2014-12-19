@@ -4,6 +4,7 @@
   "dependencies": {
     "baconjs": "^0.7.41",
     "browserify": "^7.0.1",
+    "class-list": "^0.1.1",
     "connect-livereload": "^0.5.2",
     "express": "^4.10.6",
     "gulp": "^3.8.10",
@@ -18,7 +19,6 @@
     "react-router": "^0.11.5",
     "reactify": "^0.17.1",
     "reflux": "^0.2.1",
-    "rx": "^2.3.22",
     "tiny-lr": "^0.1.4",
     "vinyl-source-stream": "^1.0.0",
     "watchify": "^2.2.1"
