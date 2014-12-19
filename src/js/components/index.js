@@ -5,7 +5,7 @@ var ClassList = require('class-list');
 var Index = React.createClass({
   getInitialState: function() {
     var shit = [];
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 10; i++) {
       shit.push(i);
     }
     return { shit: shit };
@@ -13,7 +13,7 @@ var Index = React.createClass({
 
   componentDidMount: function() {
     var node = this.getDOMNode();
-    var viewport = node.querySelector('.scroll-viewport');
+    var viewport = node.querySelector('.scroll-content');
     var track = node.querySelector('.scrollbar-track');
     var thumb = node.querySelector('.scrollbar-thumb');
 
@@ -81,12 +81,10 @@ var Index = React.createClass({
         <div className="scrollbar-track">
           <div className="scrollbar-thumb"></div>
         </div>
-        <div className="scroll-viewport">
-          <div className="scroll-content">
-            {this.state.shit.map(function(shit, i) {
-              return <div key={i}>{shit}</div>;
-            })}
-          </div>
+        <div className="scroll-content">
+          {this.state.shit.map(function(shit, i) {
+            return <div key={i}>{shit}</div>;
+          })}
         </div>
       </div>
     );
