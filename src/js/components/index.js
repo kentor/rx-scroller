@@ -1,5 +1,6 @@
 var React = require('react');
 var Rx = require('rx');
+var Bacon = require('baconjs');
 
 var Index = React.createClass({
   getInitialState: function() {
@@ -17,6 +18,15 @@ var Index = React.createClass({
     var scrollbarTrack = node.querySelector('.scrollbar-track');
 
     var scroll = Rx.Observable.fromEvent(s, 'scroll');
+
+    function redrawSrollbarTrack() {
+      var magicRatio = scrollbar.clientHeight / s.scrollHeight;
+      var scrollTop = s.scrollTop;
+      var scrollTrackHeight = scrollbar.clientHeight * magicRatio;
+
+      scrollbarTrack.style.top = (scrollTop * magicRatio) + "px";
+      scrollbarTrack.style.height = scrollTrackHeight + "px";
+    }
 
     // scrolling
     var subscription = scroll.subscribe(function(e) {
@@ -52,6 +62,31 @@ var Index = React.createClass({
     mousedrag.subscribe(function(pos) {
       var magicRatio = scrollbar.clientHeight / s.scrollHeight;
       s.scrollTop = pos.top / magicRatio;
+    });
+
+    // mouse enter show for 2 seconds
+    var mouseenterElement = Bacon.fromEventTarget(node, 'mouseenter');
+    mouseenterElement.flatMapLatest(function(me) {
+      return Bacon.later(1000, false).startWith(true);
+    }).onValue(function(bool) {
+      if (bool) {
+        redrawSrollbarTrack();
+        scrollbarTrack.style.opacity = 1;
+      } else {
+        scrollbarTrack.style.opacity = 0;
+      }
+    });
+
+    var meScrollTrack = Bacon.fromEventTarget(scrollbarTrack, 'mouseenter');
+    var mlScrollTrack = Bacon.fromEventTarget(scrollbarTrack, 'mouseleave');
+    meScrollTrack.map(true)
+    .merge(mlScrollTrack.map(false)).onValue(function(bool) {
+      if (bool) {
+        redrawSrollbarTrack();
+        scrollbarTrack.style.opacity = 1;
+      } else {
+        scrollbarTrack.style.opacity = 0;
+      }
     });
   },
 

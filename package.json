@@ -2,6 +2,7 @@
   "name": "react-boilerplate",
   "version": "0.0.0",
   "dependencies": {
+    "baconjs": "^0.7.41",
     "browserify": "^7.0.1",
     "connect-livereload": "^0.5.2",
     "express": "^4.10.6",
